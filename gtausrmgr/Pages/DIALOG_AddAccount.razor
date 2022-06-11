@@ -1,0 +1,114 @@
+﻿@page "/dialogacc/{User}/{EDITDATA}"
+
+@inject DataProvider DP
+@inject ValidateLogonData VL
+
+@if (VL.IsAuthenticatedAndPermittedAsync(User).Result)
+{
+    <form>
+        <div class="row mb-2">
+            <label class="cell-sm-2">Username</label>
+            <div class="cell-sm-10">
+                <RadzenTextBox @bind-Value="USERNAME"></RadzenTextBox>
+            </div>
+        </div>
+        <div class="row mb-2">
+            <label class="cell-sm-2">Passwort</label>
+            <div class="cell-sm-10">
+                <RadzenPassword @bind-Value="PASSWORD"></RadzenPassword>
+            </div>
+        </div>
+        <div class="row mb-2">
+            <label class="cell-sm-2">Berechtigung</label>
+            <div class="cell-sm-10">
+                <RadzenRadioButtonList @bind-Value=@PERM_LEVEL TValue="Permission.LEVEL">
+                    <Items>
+                        <RadzenRadioButtonListItem Text="Administrator" Value="Permission.LEVEL.ADMIN" />
+                        <RadzenRadioButtonListItem Text="Editrechte" Value="Permission.LEVEL.WRITE" />
+                        <RadzenRadioButtonListItem Text="Lesen" Value="Permission.LEVEL.READ" />
+                        <RadzenRadioButtonListItem Text="Keine/Deaktivierter Account" Value="Permission.LEVEL.NONE" />
+                    </Items>
+                </RadzenRadioButtonList>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="cell">
+                @if (EDITDATA != null)
+                {
+                    <button class="button primary" @onclick="SaveEditedDataAsync">Speichern</button>
+                }
+                else
+                {
+                    <button class="button primary" @onclick="SaveNewEntryAsync">Speichern</button>
+                }
+
+            </div>
+        </div>
+    </form>
+}
+else
+{
+    <p>Keine view Berechtigung oder nicht autorisiert.</p>
+}
+
+@code {
+    [Parameter]
+    public string User { get; set; }
+    [Parameter]
+    public User EDITDATA { get; set; }
+
+    private User _PREV = new User();
+
+    private string USERNAME { get; set; }
+    private int ID { get; set; }
+    private string PASSWORD { get; set; }
+    private Permission.LEVEL PERM_LEVEL { get; set; }
+
+    protected override void OnInitialized()
+    {
+        _PREV = EDITDATA;
+        if (EDITDATA != null)
+        {
+            USERNAME = EDITDATA.USERNAME;
+            ID = EDITDATA.ID;
+            PERM_LEVEL = EDITDATA.PERM_LEVEL;
+        }
+        else
+        {
+            ID = Sysdba._ACCOUNTS.Count + 1;
+        }
+    }
+
+    private async Task SaveEditedDataAsync()
+    {
+        await DP.RemoveAccountAsync(_PREV);
+        await SaveNewEntryAsync();
+    }
+
+    private async Task SaveNewEntryAsync()
+    {
+        User _USR;
+        if (this.PASSWORD == null)
+        {
+           _USR = new User
+            {
+                USERNAME = this.USERNAME,
+                ID = this.ID,
+                PASSWORD = EDITDATA.PASSWORD,
+                PERM_LEVEL = this.PERM_LEVEL
+            };
+        }
+        else
+        {
+             _USR = new User
+            {
+                USERNAME = this.USERNAME,
+                ID = this.ID,
+                PASSWORD = this.PASSWORD,
+                PERM_LEVEL = this.PERM_LEVEL
+            };
+        }
+        await DP.AddAccountAsync(_USR);
+    }
+}

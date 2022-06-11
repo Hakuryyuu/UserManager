@@ -1,0 +1,114 @@
+﻿@page "/dialog/{User}/{EDITDATA}"
+
+@inject DataProvider DP
+
+<form>
+    <div class="row mb-2">
+        <label class="cell-sm-2">Name</label>
+        <div class="cell-sm-10">
+            <RadzenTextBox @bind-Value="NAME"></RadzenTextBox>
+        </div>
+    </div>
+        <div class="row mb-2">
+        <label class="cell-sm-2">ID</label>
+        <div class="cell-sm-10">
+            <RadzenTextBox @bind-Value="ID"></RadzenTextBox>
+        </div>
+    </div>
+        <div class="row mb-2">
+        <label class="cell-sm-2">Rang</label>
+        <div class="cell-sm-10">
+            <RadzenTextBox @bind-Value="RANK"></RadzenTextBox>
+        </div>
+    </div>
+        <div class="row mb-2">
+        <label class="cell-sm-2">Eingewiesen von</label>
+        <div class="cell-sm-10">
+            <RadzenTextBox @bind-Value="INTRODUCED_BY"></RadzenTextBox>
+        </div>
+    </div>
+        <div class="row mb-2">
+        <label class="cell-sm-2">Angeworben von</label>
+        <div class="cell-sm-10">
+            <RadzenTextBox @bind-Value="RECRUITED_BY"></RadzenTextBox>
+        </div>
+    </div>
+
+
+    <div class="row mb-2">
+        <label class="cell-sm-2">Beitrag bezahlt?</label>
+        <div class="cell-sm-10">
+            <label class="checkbox transition-on"><input name="horizontal_form_c1" @bind-value="FEE_PAID" type="checkbox" data-role="checkbox" data-caption="Ja" checked="" data-role-checkbox="true" class=""><span class="check"></span><span class="caption">Ja</span></label>
+        </div>
+    </div>
+    <div class="row">
+        <div class="cell">
+            @if (EDITDATA != null)
+            {
+                <button class="button primary" @onclick="SaveEditedDataAsync">Speichern</button>
+            }
+            else
+            {
+                <button class="button primary" @onclick="SaveNewEntryAsync">Speichern</button>
+            }
+            
+        </div>
+    </div>
+</form>
+
+@code {
+    [Parameter]
+    public string User { get; set; }
+    [Parameter]
+    public Data EDITDATA { get; set; }
+
+    private Data _PREV = new Data();
+
+    private string NAME  { get; set; }
+    private string ID { get; set; }
+    private string RANK { get; set; }
+    private string INTRODUCED_BY { get; set; }
+    private string RECRUITED_BY { get; set; }
+    private bool FEE_PAID { get; set; }
+    private string sFEE_PAID { get; set; }
+
+    protected override void OnInitialized()
+    {
+        _PREV = EDITDATA;
+        if (EDITDATA != null)
+        {
+            NAME = EDITDATA.NAME;
+            ID = EDITDATA.ID.ToString();
+            RANK = EDITDATA.RANK;
+            INTRODUCED_BY = EDITDATA.INTRODUCED_BY;
+            RECRUITED_BY = EDITDATA.RECRUITED_BY;
+            sFEE_PAID = EDITDATA.FEE_PAID;
+        }
+    }
+
+    private async Task SaveEditedDataAsync()
+    {
+        await DP.RemoveToDataAsync(_PREV);
+        await SaveNewEntryAsync();
+    }
+
+    private async Task SaveNewEntryAsync()
+    {
+        if (FEE_PAID)
+        {
+            sFEE_PAID = "Ja";
+        }
+        else
+        {
+            sFEE_PAID = "Nein";
+        }
+        Data _data = new Data { 
+            NAME = this.NAME, 
+            ID = Convert.ToInt32(this.ID), 
+            RANK = this.RANK, 
+            INTRODUCED_BY = this.INTRODUCED_BY, 
+            RECRUITED_BY = this.RECRUITED_BY, 
+            FEE_PAID = this.sFEE_PAID };
+        await DP.AddToDataAsync(_data);
+    }
+}

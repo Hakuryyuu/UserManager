@@ -1,0 +1,166 @@
+﻿@page "/dashboard/{ID}"
+
+@inject ValidateLogonData VL
+@inject DataProvider DP
+@inject DialogService DialogService
+@inject NavigationManager NM
+
+<PageTitle>Dashboard</PageTitle>
+
+@if (VL.IsAuthenticatedAndPermittedAsync(ID).Result)
+{
+    <div data-role="navview" data-toggle="#paneToggle" data-expand="xl" data-compact="lg" data-active-state="true">
+        <div class="navview-pane">
+            <div class="bg-cyan d-flex flex-align-center">
+                <button class="pull-button m-0 bg-darkCyan-hover">
+                    <span class="mif-menu fg-white"></span>
+                </button>
+                <h2 class="text-light m-0 fg-white pl-7" style="line-height: 52px">Dashboard</h2>
+            </div>
+
+            <div class="suggest-box">
+                <div class="data-box">
+                    <img src="images/jek_vorobey.jpg" class="avatar">
+                    <div class="ml-4 avatar-title flex-column">
+                        <a href="/dashboard/@ID" class="d-block fg-white text-medium no-decor"><span class="reduce-1">@VL.GetUsernameAsync(ID).Result</span></a>
+                        <p class="m-0"><span class="fg-green mr-2">&#x25cf;</span><span class="text-small">online</span></p>
+                    </div>
+                </div>
+                <img src="images/jek_vorobey.jpgX" class="avatar holder ml-2">
+            </div>
+
+            <ul class="navview-menu mt-4" id="side-menu">
+                <li class="item-header">MAIN NAVIGATION</li>
+                <li>
+                    <a href="/dashboard/@ID">
+                        <span class="icon"><span class="mif-chart-line"></span></span>
+                        <span class="caption">DASHBOARD</span>
+                    </a>
+                    @if (PERM == Permission.LEVEL.ADMIN)
+                    {
+                        <a href="/accounts/@ID">
+                            <span class="icon"><span class="mif-list"></span></span>
+                            <span class="caption">ACCOUNT MANAGEMENT</span>
+                        </a>
+                    }
+                </li>
+
+            </ul>
+
+
+            <div class="w-100 text-center text-small data-box p-2 border-top bd-grayMouse" style="position: absolute; bottom: 0">
+                <div>Created by Hakuryuu</div>
+            </div>
+        </div>
+
+        <div class="navview-content h-100">
+            <div data-role="appbar" class="pos-absolute bg-darkCyan fg-white">
+
+                <a href="#" class="app-bar-item d-block d-none-lg" id="paneToggle"><span class="mif-menu"></span></a>
+
+                <div class="app-bar-container ml-auto">
+                    @*CAN ADD TOOLBAR HERE*@
+                    <div class="app-bar-container">
+                        <a href="#" class="app-bar-item">
+                            <img src="images/jek_vorobey.jpgX" class="avatar">
+                            <span class="ml-2 app-bar-name">@VL.GetUsernameAsync(ID).Result</span>
+                        </a>
+                        <div class="user-block shadow-1" data-role="collapse" data-collapsed="true">
+                            <div class="bg-darkCyan fg-white p-2 text-center">
+                                <img src="images/jek_vorobey.jpg" class="avatar">
+                                <div class="h4 mb-0">@VL.GetUsernameAsync(ID).Result</div>
+                                <div>Permission Level: @PERM</div>
+                            </div>
+                            <div class="bg-white d-flex flex-justify-between flex-equal-items p-2 bg-light">
+                                <button class="button ml-1" @onclick="LogOut">Sign out</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div id="content-wrapper" class="content-inner h-100" style="overflow-y: auto">
+                <article class="content px-4">
+                    @if (PERM != Permission.LEVEL.READ && PERM != Permission.LEVEL.NONE && PERM != null)
+                    {
+                        <button class="button info mt-1" @onclick="AddData">Eintrag hinzufügen</button>
+                    }
+                    <RadzenDataGrid AllowFiltering="true" AllowColumnResize="true"
+                                FilterMode="FilterMode.Simple" PageSize="20" AllowPaging="true" AllowSorting="true" Data="@_DATA" TItem="Data" ColumnWidth="300px"
+                                FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive"
+                                LogicalFilterOperator="LogicalFilterOperator.Or">
+                        <Columns>
+                            <RadzenDataGridColumn TItem="Data" Property="NAME" Filterable="true" Title="Name" Width="190px" TextAlign="TextAlign.Center" />
+                            <RadzenDataGridColumn TItem="Data" Property="ID" Title="ID" />
+                            <RadzenDataGridColumn TItem="Data" Property="RANK" Title="Rang" Width="100px" />
+                            <RadzenDataGridColumn TItem="Data" Property="INTRODUCED_BY" Title="Eingewisen von" />
+                            <RadzenDataGridColumn TItem="Data" Property="RECRUITED_BY" Title="Angeworben von" />
+                            <RadzenDataGridColumn TItem="Data" Property="FEE_PAID" Title="Beitrag bezahlt?" />
+                            @if (PERM != Permission.LEVEL.READ && PERM != Permission.LEVEL.NONE && PERM != null)
+                            {
+                                <RadzenDataGridColumn TItem="Data" Title="Löschen" Sortable="false" Filterable="false" Width="200px">
+                                    <Template Context="data">
+                                        <button class="button mt-1" onclick="@(() => DeleteDataAsync(data))">Löschen</button>
+                                    </Template>
+                                </RadzenDataGridColumn>
+                                <RadzenDataGridColumn TItem="Data" Title="Edit" Sortable="false" Filterable="false" Width="200px">
+                                    <Template Context="data">
+                                        <button class="button mt-1" onclick="@(() => EditDataAsync(data))">Editieren</button>
+                                    </Template>
+                                </RadzenDataGridColumn>
+                            }
+                        </Columns>
+                    </RadzenDataGrid>
+                </article>
+            </div>
+        </div>
+    </div>
+}
+else
+{
+    <p>Keine view Berechtigung oder nicht autorisiert.</p>
+}
+@code {
+    [Parameter]
+    public string ID { get; set; }
+    private List<Data> _DATA = new List<Data>();
+
+    public Permission.LEVEL PERM { get; set; }
+
+    protected override void OnInitialized()
+    {
+        var PERMS = VL.GetPermissionLevel(ID);
+        PERM = PERMS.Result;
+        var DATA = DP.GetDashboardDataAsync();
+        _DATA = DATA.Result;
+    }
+
+    private async Task LogOut()
+    {
+        await VL.LogOutAsync(ID);
+        NM.NavigateTo("/");
+    }
+
+    private async Task DeleteDataAsync(Data _data)
+    {
+        await DP.RemoveToDataAsync(_data);
+        StateHasChanged();
+        ShouldRender();
+        NM.NavigateTo($"/dashboard/{ID}", true);
+    }
+
+    private async Task EditDataAsync(Data _data)
+    {
+        await DP.RemoveToDataAsync(_data);
+
+        await DialogService.OpenAsync<DIALOG_AddMember>($"Member editieren",
+       new Dictionary<string, object>() { { "User", ID }, { "EDITDATA", _data } },
+       new DialogOptions() { Width = "700px", Height = "570px", Resizable = true, Draggable = true });
+    }
+
+    private async Task AddData()
+    {
+        await DialogService.OpenAsync<DIALOG_AddMember>($"Member hinzufügen",
+       new Dictionary<string, object>() { { "User", ID } },
+       new DialogOptions() { Width = "700px", Height = "570px", Resizable = true, Draggable = true });
+    }
+}
