@@ -1,4 +1,4 @@
 ### To-Do ###
 
-Password Hashing
-IP-Check
+- Password Hashing
+- IP-Check
